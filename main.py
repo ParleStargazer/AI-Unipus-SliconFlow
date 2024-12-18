@@ -7,10 +7,11 @@ from selenium.webdriver.chrome.service import Service
 from pydub import AudioSegment
 import speech_recognition as sr
 from openai import OpenAI
+# from zhipuai import ZhipuAI
 
 
 KimiClient = OpenAI(
-    api_key="",  # 替换为你的API Key
+    api_key="sk-",  # 替换为你的API Key
     base_url="https://api.moonshot.cn/v1",
 )
 
@@ -39,7 +40,7 @@ driver.find_element(By.CLASS_NAME, "layui-layer-btn0").click()
 
 while 1:
     IsInRightWebsite = input("是否进入正确页面(Y/n):")
-    if IsInRightWebsite != "y" and IsInRightWebsite != "Y" and IsInRightWebsite != None:
+    if IsInRightWebsite != "y" and IsInRightWebsite != "Y" and IsInRightWebsite != "":
         continue
     
     WebsiteAddress2 = driver.current_url
@@ -96,7 +97,7 @@ while 1:
             {"role": "system", "content": "你是一个聪明且仔细的英语老师,擅长做英语题目,在题目的最后你会以[答案,答案,答案,答案,....]的格式,在一个[]内给出所有答案"},
             {"role": "user", "content": Question}
         ],
-        temperature = 0.2,
+        temperature = 0.3,
     )
     
     # # 向GLM4提问
@@ -118,22 +119,21 @@ while 1:
     print("---------------------------")
 
     # Anspattern = r'\[([A-Z]+(?:,\s*[A-Z]+)*)\]'
-    Anspattern = r'\[([A-Z]+(?:,\s*[A-Z]+)*)\]'
+    Anspattern = r'\[([A-D](?:, [A-D]){1,})\]'
     KIMIFinalAns = re.search(Anspattern, KIMIResponse.choices[0].message.content)
     # GLM4FinalAns = re.search(Anspattern, GLM4Response.choices[0].message.content)
 
     # 打印结果
-    print("KIMI最终答案:")
+    print("KIMI最终答案shi :")
     print(KIMIFinalAns.group(1).replace(" ", ""))
     # print("GLM4最终答案:")
     # print(GLM4FinalAns.group(1))
     
     #自动输入
-    TempStr = KIMIFinalAns.group(1)
-    TempStr = TempStr.strip("[]")
-    TempStr = TempStr.strip(",")
-    for t in TempStr:
-        print(t)
+    # TempStr = KIMIFinalAns.group(1)
+    # TempStr = TempStr.strip("[]")
+    # TempStr = TempStr.strip(",")
+    # print(TempStr)
     
 # 关闭浏览器
 # driver.quit()
