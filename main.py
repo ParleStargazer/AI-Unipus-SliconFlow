@@ -15,7 +15,7 @@ KimiClient = OpenAI(
 )
 
 # GLM4Client = OpenAI(
-#     api_key="25fe28a2dc80609c453a0b25b84a664b.iGrnL43CC5VsAGDo",
+#     api_key="",
 #     base_url="https://open.bigmodel.cn/api/paas/v4/"
 # ) 
 
