@@ -162,11 +162,26 @@ def main():
                 if index < len(AnswerList):
                     options[AnswerList[index]].click()
         elif QuestionType == "多选题":
-            pass
+            CharList = KIMIFinalAns.split(',')
+            AnswerList = []
+            for Char in CharList:
+                AnswerList.append(ord(Char) - ord("A"))
+            option_wrap = driver.find_element(By.CLASS_NAME, "option-wrap")
+            options = option_wrap.find_elements(By.CLASS_NAME, "option")
+            # 重置所有选项的类名
+            for option in options:
+                driver.execute_script("arguments[0].className = 'option isNotReview';", option)
+            # 选中指定答案
+            for index in range(len(AnswerList)):
+                options[AnswerList[index]].click()
         elif QuestionType == "填空题":
             pass
         elif QuestionType == "回答题":
-            pass
+            TextBox= driver.find_element(By.CLASS_NAME, "question-inputbox-input")
+            # 清空原有内容并输入新的答案
+            new_answer = KIMIFinalAns
+            TextBox.clear()
+            TextBox.send_keys(new_answer)
     except Exception as e:
         print(f"Error occurs: {e}")
 
