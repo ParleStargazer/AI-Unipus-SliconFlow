@@ -5,6 +5,7 @@ import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.service import Service
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from pydub import AudioSegment
 from openai import OpenAI
 import whisper
@@ -42,10 +43,15 @@ KimiClient = OpenAI(
     base_url="https://api.moonshot.cn/v1",
 )
 
-s = Service("./msedgedriver.exe")
+# if os.name == "nt":
+#     s = Service("./msedgedriver.exe")
+# elif os.name == "posix":
+#     s = Service(EdgeChromiumDriverManager().install())
+# else:
+#     raise ValueError("系统不兼容")
 
 print("打开浏览器")
-driver = webdriver.Edge(service=s)
+driver = webdriver.Edge(service=Service(EdgeChromiumDriverManager().install()))
 
 print("打开网页")
 driver.get("https://ucloud.unipus.cn/home")

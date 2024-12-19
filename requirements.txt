@@ -6,3 +6,4 @@ speechrecognition
 openai
 openai-whisper
 setuptools-rust
+webdriver_manager
