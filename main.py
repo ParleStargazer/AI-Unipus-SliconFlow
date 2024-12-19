@@ -14,7 +14,6 @@ from reloading import reloading
 
 from secret import username, password, api_key
 
-
 def download_media(url):
     file_extension = os.path.splitext(url)[-1].lower()
     file_path = f"./.cache/Temp{file_extension}"
@@ -49,6 +48,7 @@ driver = webdriver.Edge(
     service=Service(EdgeChromiumDriverManager().install(), log_path="nul"),
     options=Options().add_argument("--disable-logging"),  # 禁用浏览器日志
 )
+
 driver.get("https://ucloud.unipus.cn/home")
 time.sleep(2)
 driver.find_element(By.NAME, "username").send_keys(username)
@@ -138,19 +138,35 @@ def main():
         print(f"以下为KIMI答案:\n{KIMIResponse.choices[0].message.content}\n---------------------------")
 
         Anspattern = r"\[([^\n]*)\]"
-        KIMIFinalAns = re.search(Anspattern, KIMIResponse.choices[0].message.content.replace(" ", ""))
-        print(KIMIFinalAns.group(1))
-        return
+        KIMIFinalAns = re.search(Anspattern, KIMIResponse.choices[0].message.content)
+        KIMIFinalAns = KIMIFinalAns.group(1).replace("\"", "")
 
         # 打印结果
         print("KIMI最终答案是:")
-        print(KIMIFinalAns.group(1).replace(" ", ""))
+        print(KIMIFinalAns)
 
         # 自动输入
-        # TempStr = KIMIFinalAns.group(1)
-        # TempStr = TempStr.strip("""")
-        # TempStr = TempStr.strip(",")
-        # print(TempStr)
+        if QuestionType == "单选题":
+            CharList = KIMIFinalAns.split(',')
+            AnswerList = []
+            for Char in CharList:
+                AnswerList.append(ord(Char) - ord("A"))
+            option_wraps = driver.find_elements(By.CLASS_NAME, "option-wrap")
+            for index, option_wrap in enumerate(option_wraps):
+            # 找到当前容器中的所有选项
+                options = option_wrap.find_elements(By.CLASS_NAME, "option")
+                # 重置所有选项的类名
+                for option in options:
+                    driver.execute_script("arguments[0].className = 'option isNotReview';", option)
+                # 选中指定答案
+                if index < len(AnswerList):
+                    options[AnswerList[index]].click()
+        elif QuestionType == "多选题":
+            pass
+        elif QuestionType == "填空题":
+            pass
+        elif QuestionType == "回答题":
+            pass
     except Exception as e:
         print(f"Error occurs: {e}")
 
