@@ -17,7 +17,7 @@ model = whisper.load_model("base")
 def download_media(url):
     # 获取文件扩展名
     file_extension = os.path.splitext(url)[-1].lower()
-    file_path = f"./.cache/temp{file_extension}"
+    file_path = f"./.cache/Temp{file_extension}"
     print(f"下载文件 {file_extension}")
     response = requests.get(url, stream=True)
     with open(file_path, "wb") as f:
@@ -34,7 +34,7 @@ def export_wav(file_path, file_extension):
         audio = AudioSegment.from_file(file_path, format="mp4")
     else:
         raise ValueError(f"不支持的文件格式: {file_extension}")
-    audio.export("./.cache/temp.wav", format="wav")
+    audio.export("./.cache/Temp.wav", format="wav")
     print("成功转换为WAV格式音频")
 
 
@@ -71,8 +71,10 @@ while 1:
         # 获取页面完整的HTML内容
         print("获取页面完整的HTML内容")
         WebsiteData = driver.page_source
-        ReplyWrapData = driver.find_element(By.CLASS_NAME, "layout-reply-container")
-        print(ReplyWrapData.text)
+        ReplyContainerData = driver.find_element(By.CLASS_NAME, "layout-reply-container")
+        Question = "以下是题目:\n" + ReplyContainerData.text
+        print(Question)
+        
 
         # 获取mp3路径
         print("获取mp3路径")
@@ -83,14 +85,14 @@ while 1:
 
         # 下载并转换为WAV
         if not os.path.exists("./.cache/"):
-            print ("创建缓存文件夹")
+            print("创建缓存文件夹")
             os.makedirs(".cache")
         result = download_media(aduio_url)
         export_wav (result["file_path"], result["file_extension"])
 
         # Get Text
         print("正在进行语音识别")
-        said = model.transcribe("Temp.wav")["text"]
+        ListeningData = "以下内容是视频或者音频转成的文章内容:\n" + model.transcribe("./.cache/Temp.wav")["text"]
         print("语音识别成功")
 
         prompt = """- Role: 英语文章解析专家和逻辑推理大师
@@ -106,18 +108,24 @@ while 1:
     3. 根据文章内容和逻辑推理,确定每个问题的正确答案,并解释每个选项。
     4. 在解释完所有问题后,以“[答案,答案,答案,答案,...]”的格式汇总所有答案。\n"""
 
-        Question = prompt
-        Question += said + ReplyWrapData.text
+        # Question = prompt
+        # Question += said + ReplyContainerData.text
 
-        print (f"said:\n{said}\nreply:\n{ReplyWrapData.text}")
-
+        # print(f"said:\n{ListeningData}\nreply:\n{ReplyContainerData.text}")
+        Direction = "以下是题目的Direction,注意所有的视频和音频已经转化成英文文章:\n" + driver.find_element(By.CLASS_NAME, "abs-direction").text
+        # print(Direction)
+        
+        AIQuestion = prompt + "\n" + Direction + "\n" + ListeningData + "\n" + Question
+        
+        # print(AIQuestion)
+        
         # 向kimi提问
         print("正在等待KIMI回答")
         KIMIResponse = KimiClient.chat.completions.create(
             model="moonshot-v1-8k",  # 你可以根据需要选择不同的模型版本
             messages=[
                 {"role": "system", "content": "欢迎来到英语文章解析与逻辑推理的世界。请提供一篇英语文章和一个或多个选择题,我将为你解答并解释每个选项。最后,我会以“[答案,答案,答案,答案,...]”的格式给出所有答案。"},
-                {"role": "user", "content": Question},
+                {"role": "user", "content": AIQuestion},
             ],
             temperature=0.3,
         )
@@ -129,15 +137,16 @@ while 1:
         Anspattern = r"\[([A-D](?:,?[A-D]){1,})\]"
         KIMIFinalAns = re.search(Anspattern, KIMIResponse.choices[0].message.content.replace(" ", ""))
 
+        continue
         # 打印结果
-        print("KIMI最终答案shi :")
+        print("KIMI最终答案是:")
         print(KIMIFinalAns.group(1).replace(" ", ""))
 
         # 自动输入
-        # tempStr = KIMIFinalAns.group(1)
-        # tempStr = tempStr.strip("[]")
-        # tempStr = tempStr.strip(",")
-        # print(tempStr)
+        # TempStr = KIMIFinalAns.group(1)
+        # TempStr = TempStr.strip("[]")
+        # TempStr = TempStr.strip(",")
+        # print(TempStr)
     except Exception as e:
         print(e)
 
