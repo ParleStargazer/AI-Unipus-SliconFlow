@@ -6,11 +6,12 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.service import Service
 from pydub import AudioSegment
-import speech_recognition as sr
 from openai import OpenAI
+import whisper
 
 from secret import username, password, api_key
 
+model = whisper.load_model("base")
 
 def download_media(url):
     # 获取文件扩展名
@@ -23,7 +24,6 @@ def download_media(url):
             if chunk:
                 f.write(chunk)
     return {"file_path": file_path, "file_extension": file_extension}
-
 
 def export_wav(file_path, file_extension):
     print("尝试转换为WAV格式音频")
@@ -90,13 +90,8 @@ while 1:
         export_wav (result["file_path"], result["file_extension"])
 
         # Get Text
-        print("正在进行语音识别(可能要1分钟)")
-        AudioFile = sr.AudioFile("./.cache/temp.wav")
-        r = sr.Recognizer()
-        with AudioFile as source:
-            AudioData = r.record(source)
-
-        said = r.recognize_google(AudioData, language="en-US")
+        print("正在进行语音识别")
+        said = model.transcribe("Temp.wav")["text"]
         print("语音识别成功")
 
         prompt = """- Role: 英语文章解析专家和逻辑推理大师
@@ -110,23 +105,7 @@ while 1:
     1. 仔细阅读并理解英语文章的内容。
     2. 针对每个选择题,分析选项与文章内容的关系。
     3. 根据文章内容和逻辑推理,确定每个问题的正确答案,并解释每个选项。
-    4. 在解释完所有问题后,以“[答案,答案,答案,答案,...]”的格式汇总所有答案。
-    - Examples:
-    - 1:文章讨论了全球变暖的影响。
-        问题:全球变暖的主要原因是什么？
-        选项A:太阳辐射增强
-        选项B:工业排放增加
-        选项C:人口增长
-        选项D:自然气候变化
-        解释:根据文章内容,全球变暖的主要原因是工业排放增加,因此正确答案是选项B。选项A、C和D虽然也对气候有一定影响,但不是主要原因。
-        2:文章分析了不同国家的教育体系。
-        问题:哪个国家的教育体系最注重实践教学？
-        选项A:美国
-        选项B:英国
-        选项C:德国
-        选项D:中国
-        解释:文章中提到德国的教育体系最注重实践教学,因此正确答案是选项C。其他选项虽然也有实践教学,但不如德国重视。
-        答案:[B,C]\n"""
+    4. 在解释完所有问题后,以“[答案,答案,答案,答案,...]”的格式汇总所有答案。\n"""
 
         Question = prompt
         Question += said + ReplyWrapData.text
