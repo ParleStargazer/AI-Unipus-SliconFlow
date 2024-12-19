@@ -1,5 +1,8 @@
 requests
+ffmpeg
 selenium
 pydub
 speechrecognition
 openai
+openai-whisper
+setuptools-rust
