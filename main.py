@@ -43,13 +43,6 @@ KimiClient = OpenAI(
     base_url="https://api.moonshot.cn/v1",
 )
 
-# if os.name == "nt":
-#     s = Service("./msedgedriver.exe")
-# elif os.name == "posix":
-#     s = Service(EdgeChromiumDriverManager().install())
-# else:
-#     raise ValueError("系统不兼容")
-
 print("打开浏览器")
 driver = webdriver.Edge(service=Service(EdgeChromiumDriverManager().install()))
 
@@ -129,34 +122,16 @@ while 1:
             temperature=0.3,
         )
 
-        # # 向GLM4提问
-        # print("正在等待GLM4回答")
-        # GLM4Response = GLM4Client.chat.completions.create(
-        # model="glm-4-airx",  # 请填写您要调用的模型名称
-        #     messages=[
-        #             {"role": "system", "content": "你是一个聪明且仔细的英语老师,擅长做英语题目,在题目的最后你会以[答案,答案,答案,答案,....]的格式,在一个[]内给出所有答案"},
-        #             {"role": "user", "content": Question}
-        #         ],
-        #     top_p=0.7,
-        #     temperature=0.9
-        # )
-
         print("以下为KIMI答案:")
         print(KIMIResponse.choices[0].message.content)
-        # print("以下为GLM4答案:")
-        # print(GLM4Response.choices[0].message.content)
         print("---------------------------")
 
-        # Anspattern = r'\[([A-Z]+(?:,\s*[A-Z]+)*)\]'
         Anspattern = r"\[([A-D](?:,?[A-D]){1,})\]"
         KIMIFinalAns = re.search(Anspattern, KIMIResponse.choices[0].message.content.replace(" ", ""))
-        # GLM4FinalAns = re.search(Anspattern, GLM4Response.choices[0].message.content)
 
         # 打印结果
         print("KIMI最终答案shi :")
         print(KIMIFinalAns.group(1).replace(" ", ""))
-        # print("GLM4最终答案:")
-        # print(GLM4FinalAns.group(1))
 
         # 自动输入
         # tempStr = KIMIFinalAns.group(1)
