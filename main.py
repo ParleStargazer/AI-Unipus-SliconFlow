@@ -176,7 +176,7 @@ def main():
                 options[AnswerList[index]].click()
         elif QuestionType == "填空题":
             pass
-        elif QuestionType == "回答题":
+        elif Questi                    driver.onType == "回答题":
             TextBox= driver.find_element(By.CLASS_NAME, "question-inputbox-input")
             # 清空原有内容并输入新的答案
             new_answer = KIMIFinalAns
