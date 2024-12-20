@@ -38,7 +38,8 @@ def export_wav(file_path, file_extension):
     print("成功转换为WAV格式音频")
 
 
-KimiClient = OpenAI(api_key=api_key, base_url="https://api.moonshot.cn/v1")
+# KIMIClient = OpenAI(api_key=api_key, base_url="https://api.moonshot.cn/v1")
+DeepSeekClient = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
 
 print("正在载入whisper模型")
 model = whisper.load_model("base")
@@ -122,9 +123,10 @@ def main():
         AIQuestion = f"{prompt}\n{Direction}\n{ListeningData}\n{Question}"
         # print(AIQuestion)
 
-        print("正在等待KIMI回答")
-        KIMIResponse = KimiClient.chat.completions.create(
-            model="moonshot-v1-8k",  # 你可以根据需要选择不同的模型版本
+        print("正在等待DeepSeek回答")
+        DeepSeekResponse = DeepSeekClient.chat.completions.create(
+            # model="moonshot-v1-8k",  # 你可以根据需要选择不同的模型版本
+            model = "deepseek-chat",
             messages=[
                 {
                     "role": "system",
@@ -135,19 +137,19 @@ def main():
             temperature=0.2,
         )
 
-        print(f"以下为KIMI答案:\n{KIMIResponse.choices[0].message.content}\n---------------------------")
+        print(f"以下为DeepSeek答案:\n{DeepSeekResponse.choices[0].message.content}\n---------------------------")
 
         Anspattern = r"\[([^\n]*)\]"
-        KIMIFinalAns = re.search(Anspattern, KIMIResponse.choices[0].message.content)
-        KIMIFinalAns = KIMIFinalAns.group(1).replace("\"", "")
+        DeepSeekFinalAns = re.search(Anspattern, DeepSeekResponse.choices[0].message.content)
+        DeepSeekFinalAns = DeepSeekFinalAns.group(1).replace("\"", "")
 
         # 打印结果
-        print("KIMI最终答案是:")
-        print(KIMIFinalAns)
+        print("DeepSeek最终答案是:")
+        print(DeepSeekFinalAns)
 
         # 自动输入
         if QuestionType == "单选题":
-            CharList = KIMIFinalAns.split(',')
+            CharList = DeepSeekFinalAns.split(',')
             AnswerList = []
             for Char in CharList:
                 AnswerList.append(ord(Char) - ord("A"))
@@ -161,8 +163,13 @@ def main():
                 # 选中指定答案
                 if index < len(AnswerList):
                     options[AnswerList[index]].click()
+            SubmitButton = driver.find_element(By.CLASS_NAME, "btn")
+            SubmitButton.click()
+            time.sleep(0.8)
+            YesButton = driver.find_element(By.CLASS_NAME, "ant-btn-primary")
+            YesButton.click()
         elif QuestionType == "多选题":
-            CharList = KIMIFinalAns.split(',')
+            CharList = DeepSeekFinalAns.split(',')
             AnswerList = []
             for Char in CharList:
                 AnswerList.append(ord(Char) - ord("A"))
@@ -176,10 +183,10 @@ def main():
                 options[AnswerList[index]].click()
         elif QuestionType == "填空题":
             pass
-        elif Questi                    driver.onType == "回答题":
+        elif QuestionType == "回答题":
             TextBox= driver.find_element(By.CLASS_NAME, "question-inputbox-input")
             # 清空原有内容并输入新的答案
-            new_answer = KIMIFinalAns
+            new_answer = DeepSeekFinalAns
             TextBox.clear()
             TextBox.send_keys(new_answer)
     except Exception as e:
