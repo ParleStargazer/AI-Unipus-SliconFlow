@@ -53,11 +53,12 @@ driver = webdriver.Edge(
 )
 
 driver.get("https://ucloud.unipus.cn/home")
-time.sleep(2)
+WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.NAME, "username")))
 driver.find_element(By.NAME, "username").send_keys(username)
+WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.NAME, "password")))
 driver.find_element(By.NAME, "password").send_keys(password)
 driver.find_element(By.ID, "login").click()
-time.sleep(0.5)
+WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.CLASS_NAME, "layui-layer-btn0")))
 driver.find_element(By.CLASS_NAME, "layui-layer-btn0").click()
 
 
