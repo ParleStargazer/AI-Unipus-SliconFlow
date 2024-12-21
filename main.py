@@ -41,6 +41,16 @@ def export_wav(file_path, file_extension):
     audio.export("./.cache/Temp.wav", format="wav")
     print("成功转换为WAV格式音频")
 
+def Submit():
+    SubmitButton = driver.find_element(By.CLASS_NAME, "btn")
+    SubmitButton.click()
+    try:
+        WebDriverWait(driver,1).until(EC.element_to_be_clickable((By.CLASS_NAME, "ant-btn-primary")))
+        YesButton = driver.find_element(By.CLASS_NAME, "ant-btn-primary")
+        YesButton.click()
+    except:
+        print("无二次确认")
+
 DeepSeekClient = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
 
 print("正在载入whisper模型")
@@ -161,11 +171,7 @@ def main():
                 Options = OptionWrap.find_elements(By.CLASS_NAME, "option")
                 if index < len(AnswerList):
                     Options[AnswerList[index]].click()
-            SubmitButton = driver.find_element(By.CLASS_NAME, "btn")
-            SubmitButton.click()
-            WebDriverWait(driver,2).until(EC.presence_of_element_located((By.CLASS_NAME, "ant-btn-primary")))
-            YesButton = driver.find_element(By.CLASS_NAME, "ant-btn-primary")
-            YesButton.click()
+            Submit()
         elif QuestionType == "多选题":
             OptionWrap = driver.find_element(By.CLASS_NAME, "option-wrap")
             # 重置所有选项的类名
@@ -181,10 +187,20 @@ def main():
             Options = OptionWrap.find_elements(By.CLASS_NAME, "option")
             for index in range(len(AnswerList)):
                 Options[AnswerList[index]].click()
-            SubmitButton = driver.find_element(By.CLASS_NAME, "btn")
-            SubmitButton.click()
+            Submit()
         elif QuestionType == "填空题":
-            pass
+            # 把AI回答变成格式化答案
+            AnswerList = []
+            for Item in JsonData["questions"]:
+                AnswerList.extend(Item["answer"].split("|"))
+            # 填答案
+            Containers = driver.find_element(By.CSS_SELECTOR, ".question-common-abs-scoop.comp-scoop-reply")
+            Blanks = Containers.find_elements(By.CSS_SELECTOR, "div.comp-abs-input.input-user-answer.input-can-focus > input")
+            for Index, Blank in enumerate(Blanks):
+                Blank.clear()
+                Blank.send_keys(AnswerList[Index])
+            # 提交
+            Submit()
         elif QuestionType == "回答题":
             pass
             # TextBox= driver.find_element(By.CLASS_NAME, "question-inputbox-input")
