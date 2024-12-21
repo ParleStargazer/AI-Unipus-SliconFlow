@@ -3,6 +3,8 @@ import re
 import os
 import requests
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.edge.options import Options
@@ -89,7 +91,8 @@ def main():
         match = re.search(r'src="([^"]+\.(mp3|mp4))(#|")', driver.page_source)
         aduio_url = match.group(1)
         # print(aduio_url)
-
+        
+        # return#temp Test
         # 下载并转换为WAV
         if not os.path.exists("./.cache/"):
             print("创建缓存文件夹")
@@ -149,38 +152,42 @@ def main():
 
         # 自动输入
         if QuestionType == "单选题":
+            OptionWraps = driver.find_elements(By.CLASS_NAME, "option-wrap")
+            # 把AI回答变成格式化答案
             CharList = DeepSeekFinalAns.split(',')
             AnswerList = []
             for Char in CharList:
                 AnswerList.append(ord(Char) - ord("A"))
-            option_wraps = driver.find_elements(By.CLASS_NAME, "option-wrap")
-            for index, option_wrap in enumerate(option_wraps):
-            # 找到当前容器中的所有选项
-                options = option_wrap.find_elements(By.CLASS_NAME, "option")
-                # 重置所有选项的类名
-                for option in options:
-                    driver.execute_script("arguments[0].className = 'option isNotReview';", option)
-                # 选中指定答案
+            # 选中指定答案
+            for index, OptionWrap in enumerate(OptionWraps):
+                Options = OptionWrap.find_elements(By.CLASS_NAME, "option")
                 if index < len(AnswerList):
-                    options[AnswerList[index]].click()
+                    Options[AnswerList[index]].click()
             SubmitButton = driver.find_element(By.CLASS_NAME, "btn")
             SubmitButton.click()
-            time.sleep(0.8)
+            WebDriverWait(driver,2).until(EC.presence_of_element_located((By.CLASS_NAME, "ant-btn-primary")))
             YesButton = driver.find_element(By.CLASS_NAME, "ant-btn-primary")
             YesButton.click()
         elif QuestionType == "多选题":
+            OptionWrap = driver.find_element(By.CLASS_NAME, "option-wrap")
+            # 重置所有选项的类名
+            SelectedOptions = OptionWrap.find_elements(By.CSS_SELECTOR, ".option.selected.isNotReview")
+            for SelectedOption in SelectedOptions:
+                SelectedOption.click()
+            # 把AI回答变成格式化答案
             CharList = DeepSeekFinalAns.split(',')
             AnswerList = []
             for Char in CharList:
                 AnswerList.append(ord(Char) - ord("A"))
-            option_wrap = driver.find_element(By.CLASS_NAME, "option-wrap")
-            options = option_wrap.find_elements(By.CLASS_NAME, "option")
-            # 重置所有选项的类名
-            for option in options:
-                driver.execute_script("arguments[0].className = 'option isNotReview';", option)
             # 选中指定答案
+            Options = OptionWrap.find_elements(By.CLASS_NAME, "option")
             for index in range(len(AnswerList)):
-                options[AnswerList[index]].click()
+                Options[AnswerList[index]].click()
+            SubmitButton = driver.find_element(By.CLASS_NAME, "btn")
+            SubmitButton.click()
+            WebDriverWait(driver,2).until(EC.presence_of_element_located((By.CLASS_NAME, "ant-btn-primary")))
+            YesButton = driver.find_element(By.CLASS_NAME, "ant-btn-primary")
+            YesButton.click()
         elif QuestionType == "填空题":
             pass
         elif QuestionType == "回答题":
