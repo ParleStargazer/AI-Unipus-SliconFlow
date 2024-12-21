@@ -61,7 +61,10 @@ WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.ID, "login")))
 driver.find_element(By.ID, "login").click()
 WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.CLASS_NAME, "layui-layer-btn0")))
 driver.find_element(By.CLASS_NAME, "layui-layer-btn0").click()
-
+WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary")))
+driver.find_element(By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary").click()
+WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ")))
+driver.find_element(By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ").click()
 
 @reloading
 def main():
