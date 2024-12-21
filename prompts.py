@@ -30,3 +30,14 @@ BlankQuestion = """请帮我解答以下英语题目, 并将答案以JSON格式�
   ]
 }
 """
+
+InputBoxQuestion = """请帮我解答以下英语题目, 并将答案以JSON格式输出,题目的答案应包含正确答案。JSON格式如下:
+{
+  "questions": [
+    {
+      "answer": "正确答案",
+    },
+    ...
+  ]
+}
+"""

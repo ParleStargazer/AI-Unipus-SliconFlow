@@ -130,7 +130,7 @@ def main():
         elif QuestionType == "填空题":
             AIQuestion = f"{BlankQuestion}\n{Direction}\n{ListeningData}\n{Question}"
         elif QuestionType == "回答题":
-            # AIQuestion = f"{MultipleChoiceQuestionPrompt}\n{Direction}\n{ListeningData}\n{Question}"
+            AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{ListeningData}\n{Question}"
             pass
         
         # print(AIQuestion)
@@ -202,12 +202,13 @@ def main():
             # 提交
             Submit()
         elif QuestionType == "回答题":
-            pass
-            # TextBox= driver.find_element(By.CLASS_NAME, "question-inputbox-input")
-            # # 清空原有内容并输入新的答案
-            # new_answer = DeepSeekFinalAns
-            # TextBox.clear()
-            # TextBox.send_keys(new_answer)
+            print(JsonData)
+            TextBoxs = driver.find_elements(By.CLASS_NAME, "question-inputbox-input")
+            # 清空原有内容并输入新的答案
+            for Index, TextBox in enumerate(TextBoxs):
+                TextBox.clear()
+                TextBox.send_keys(JsonData["questions"][Index]["answer"])
+            Submit()
     except Exception as e:
         print(f"Error occurs: {e}")
 
