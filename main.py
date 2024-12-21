@@ -41,8 +41,6 @@ def export_wav(file_path, file_extension):
     audio.export("./.cache/Temp.wav", format="wav")
     print("成功转换为WAV格式音频")
 
-
-# KIMIClient = OpenAI(api_key=api_key, base_url="https://api.moonshot.cn/v1")
 DeepSeekClient = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
 
 print("正在载入whisper模型")
@@ -94,7 +92,6 @@ def main():
         aduio_url = match.group(1)
         # print(aduio_url)
         
-        # return#temp Test
         # 下载并转换为WAV
         if not os.path.exists("./.cache/"):
             print("创建缓存文件夹")
@@ -123,7 +120,6 @@ def main():
         
         # print(AIQuestion)
         
-        
         print("正在等待DeepSeek回答")
         DeepSeekResponse = DeepSeekClient.chat.completions.create(
             model = "deepseek-chat",
@@ -142,23 +138,19 @@ def main():
         AnswerMatched = re.search(r'\{[\s\S]*\}', Answer)
         JsonStr = AnswerMatched.group(0)
         JsonData = json.loads(JsonStr)
+        # 打印结果
         print("DeepSeek最终答案是:")
         for Temp in JsonData["questions"]:
             print(f"{Temp["answer"]}")
 
-
-        # 打印结果
-        # print("DeepSeek最终答案是:")
-        # print(DeepSeekFinalAns)
-        return#temp
+        # return#temp
         # 自动输入
         if QuestionType == "单选题":
             OptionWraps = driver.find_elements(By.CLASS_NAME, "option-wrap")
             # 把AI回答变成格式化答案
-            CharList = DeepSeekFinalAns.split(',')
             AnswerList = []
-            for Char in CharList:
-                AnswerList.append(ord(Char) - ord("A"))
+            for Item in JsonData["questions"]:
+                AnswerList.append(ord(Item["answer"]) - ord("A"))
             # 选中指定答案
             for index, OptionWrap in enumerate(OptionWraps):
                 Options = OptionWrap.find_elements(By.CLASS_NAME, "option")
@@ -176,27 +168,25 @@ def main():
             for SelectedOption in SelectedOptions:
                 SelectedOption.click()
             # 把AI回答变成格式化答案
-            CharList = DeepSeekFinalAns.split(',')
             AnswerList = []
-            for Char in CharList:
-                AnswerList.append(ord(Char) - ord("A"))
+            for Item in JsonData["questions"][0]["answer"]:
+                if Item != "|":
+                    AnswerList.append(ord(Item) - ord("A"))
             # 选中指定答案
             Options = OptionWrap.find_elements(By.CLASS_NAME, "option")
             for index in range(len(AnswerList)):
                 Options[AnswerList[index]].click()
             SubmitButton = driver.find_element(By.CLASS_NAME, "btn")
             SubmitButton.click()
-            WebDriverWait(driver,2).until(EC.presence_of_element_located((By.CLASS_NAME, "ant-btn-primary")))
-            YesButton = driver.find_element(By.CLASS_NAME, "ant-btn-primary")
-            YesButton.click()
         elif QuestionType == "填空题":
             pass
         elif QuestionType == "回答题":
-            TextBox= driver.find_element(By.CLASS_NAME, "question-inputbox-input")
-            # 清空原有内容并输入新的答案
-            new_answer = DeepSeekFinalAns
-            TextBox.clear()
-            TextBox.send_keys(new_answer)
+            pass
+            # TextBox= driver.find_element(By.CLASS_NAME, "question-inputbox-input")
+            # # 清空原有内容并输入新的答案
+            # new_answer = DeepSeekFinalAns
+            # TextBox.clear()
+            # TextBox.send_keys(new_answer)
     except Exception as e:
         print(f"Error occurs: {e}")
 
