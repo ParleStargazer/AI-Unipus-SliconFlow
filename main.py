@@ -60,10 +60,10 @@ print("正在载入whisper模型")
 model = whisper.load_model("base")
 
 print("正在启动浏览器并自动登录U校园AI板")
-driver = webdriver.Edge(
-    service=Service(EdgeChromiumDriverManager().install(), log_path="nul"),
-    options=Options().add_argument("--disable-logging"),  # 禁用浏览器日志
-)
+options = Options()
+options.add_argument("--disable-logging")
+options.add_argument("--log-level=OFF")
+driver = webdriver.Edge(service=Service(EdgeChromiumDriverManager().install(), log_path="nul"), options=options)
 
 driver.get("https://ucloud.unipus.cn/home")
 WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.NAME, "username")))
@@ -81,7 +81,7 @@ driver.find_element(By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-bot
 
 
 @reloading
-def CompleteSingleQuestion():
+def complete_single_question():
     try:
         WebsiteAddress2 = driver.current_url
         print("网址是:%s" % WebsiteAddress2)
@@ -220,25 +220,51 @@ def CompleteSingleQuestion():
 
 
 @reloading
-def Auto():
+def auto():
     print("开始全自动答题, 请勿操作浏览器!")
-    print("正在获取单元列表")
-    Units = driver.find_elements(By.CSS_SELECTOR, "[data-index]")
-    for i in Units:
-        i.click()
+    course_url = driver.current_url
+    print("正在获取待做题列表")
+    pending_questions = []
+    units = driver.find_elements(By.CSS_SELECTOR, "[data-index]")
+    for unit in units:
+        unit_pending_questions = []
+        unit.click()
         time.sleep(1)
+        active_unit_area = driver.find_element(By.CLASS_NAME, "unipus-tabs_itemActive__x0WVI")
+        elements = active_unit_area.find_elements(By.CLASS_NAME, "courses-unit_taskItemContainer__gkVix")
+        for index, element in enumerate(elements):
+            text_content = element.text  # 获取元素的文本内容
+            if "必修" in text_content and "已完成" not in text_content:
+                unit_pending_questions.append(index)
+        pending_questions.append({"data-index": unit.get_attribute("data-index"), "questions": unit_pending_questions})
+    # print(pending_questions)
+    for unit in pending_questions:
+        # print(unit)
+        questions = unit["questions"]
+        for question in questions:
+            print(f"正在进入Unit{unit['data-index']}的第{question}题")
+            driver.get(course_url)
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-index]")))
+            driver.find_element(By.CSS_SELECTOR, f'[data-index="{unit["data-index"]}"]').click()
+            time.sleep(1)
+            active_unit_area = driver.find_element(By.CLASS_NAME, "unipus-tabs_itemActive__x0WVI")
+            elements = active_unit_area.find_elements(By.CLASS_NAME, "courses-unit_taskItemContainer__gkVix")
+            # print(type(question))
+            elements[question].click()
+            print("开始自动答题")
+            time.sleep(5)
 
 
 @reloading
-def Manual():
+def manual():
     while True:
         print("\n当前模式: 半自动; 手动等待下一步操作: [1]抓取当前页面并分析(default) [2]退出当前模式")
-        Operate = input("Input Operate: ")
-        match Operate:
+        operate = input("Input Operate: ")
+        match operate:
             case "":
-                CompleteSingleQuestion()
+                complete_single_question()
             case "1":
-                CompleteSingleQuestion()
+                complete_single_question()
             case "2":
                 return
             case _:
@@ -248,11 +274,11 @@ def Manual():
 if __name__ == "__main__":
     while True:
         print("\n选择模式: [1]全自动答题(请确保停留在教程目录页面) [2]半自动答题")
-        Mode = input("Input Mode: ")
-        match Mode:
+        mode = input("Input Mode: ")
+        match mode:
             case "1":
-                Auto()
+                auto()
             case "2":
-                Manual()
+                manual()
             case _:
                 print("请输入正确的选项")
