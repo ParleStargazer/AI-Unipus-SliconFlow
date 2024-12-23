@@ -223,10 +223,11 @@ def CompleteSingleQuestion():
 def Auto():
     print("开始全自动答题, 请勿操作浏览器!")
     print("正在获取单元列表")
-    Units = driver.find_elements(By.CSS_SELECTOR, '[data-index]')
+    Units = driver.find_elements(By.CSS_SELECTOR, "[data-index]")
     for i in Units:
-        i.click ()
+        i.click()
         time.sleep(1)
+
 
 @reloading
 def Manual():
