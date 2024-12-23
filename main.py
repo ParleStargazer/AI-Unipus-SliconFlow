@@ -16,7 +16,8 @@ from openai import OpenAI
 from reloading import reloading
 
 from secret import username, password, api_key
-from prompts import *
+from prompts import SingleChoiceQuestionPrompt, MultipleChoiceQuestionPrompt, BlankQuestion, InputBoxQuestion
+
 
 def download_media(url):
     file_extension = os.path.splitext(url)[-1].lower()
@@ -41,15 +42,17 @@ def export_wav(file_path, file_extension):
     audio.export("./.cache/Temp.wav", format="wav")
     print("成功转换为WAV格式音频")
 
+
 def Submit():
     SubmitButton = driver.find_element(By.CLASS_NAME, "btn")
     SubmitButton.click()
     try:
-        WebDriverWait(driver,1).until(EC.element_to_be_clickable((By.CLASS_NAME, "ant-btn-primary")))
+        WebDriverWait(driver, 1).until(EC.element_to_be_clickable((By.CLASS_NAME, "ant-btn-primary")))
         YesButton = driver.find_element(By.CLASS_NAME, "ant-btn-primary")
         YesButton.click()
-    except:
+    except Exception:
         print("无二次确认")
+
 
 DeepSeekClient = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
 
@@ -63,21 +66,22 @@ driver = webdriver.Edge(
 )
 
 driver.get("https://ucloud.unipus.cn/home")
-WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.NAME, "username")))
+WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.NAME, "username")))
 driver.find_element(By.NAME, "username").send_keys(username)
-WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.NAME, "password")))
+WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.NAME, "password")))
 driver.find_element(By.NAME, "password").send_keys(password)
-WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.ID, "login")))
+WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.ID, "login")))
 driver.find_element(By.ID, "login").click()
-WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.CLASS_NAME, "layui-layer-btn0")))
+WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CLASS_NAME, "layui-layer-btn0")))
 driver.find_element(By.CLASS_NAME, "layui-layer-btn0").click()
-WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary")))
+WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary")))
 driver.find_element(By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary").click()
-WebDriverWait(driver,2).until(EC.element_to_be_clickable((By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ")))
+WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ")))
 driver.find_element(By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ").click()
 
+
 @reloading
-def main():
+def CompleteSingleQuestion():
     try:
         WebsiteAddress2 = driver.current_url
         print("网址是:%s" % WebsiteAddress2)
@@ -106,7 +110,7 @@ def main():
         match = re.search(r'src="([^"]+\.(mp3|mp4))(#|")', driver.page_source)
         aduio_url = match.group(1)
         # print(aduio_url)
-        
+
         # 下载并转换为WAV
         if not os.path.exists("./.cache/"):
             print("创建缓存文件夹")
@@ -121,7 +125,7 @@ def main():
         # print(Direction)
 
         print(f"{Direction}\n{ListeningData}\n{Question}")
-        
+
         # AIQuestion = f"{prompt}\n{Direction}\n{ListeningData}\n{Question}"
         if QuestionType == "单选题":
             AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{ListeningData}\n{Question}"
@@ -132,16 +136,16 @@ def main():
         elif QuestionType == "回答题":
             AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{ListeningData}\n{Question}"
             pass
-        
+
         # print(AIQuestion)
-        
+
         print("正在等待DeepSeek回答")
         DeepSeekResponse = DeepSeekClient.chat.completions.create(
-            model = "deepseek-chat",
+            model="deepseek-chat",
             messages=[
                 {
                     "role": "system",
-                    "content": f"""欢迎来到英语文章解析与逻辑推理的世界。请提供一篇英语文章和一些题目""",
+                    "content": """欢迎来到英语文章解析与逻辑推理的世界。请提供一篇英语文章和一些题目""",
                 },
                 {"role": "user", "content": AIQuestion},
             ],
@@ -150,80 +154,104 @@ def main():
 
         Answer = DeepSeekResponse.choices[0].message.content
         print(f"以下为DeepSeek答案:\n{Answer}\n---------------------------")
-        AnswerMatched = re.search(r'\{[\s\S]*\}', Answer)
+        AnswerMatched = re.search(r"\{[\s\S]*\}", Answer)
         JsonStr = AnswerMatched.group(0)
         JsonData = json.loads(JsonStr)
         # 打印结果
         print("DeepSeek最终答案是:")
         for Temp in JsonData["questions"]:
-            print(f"{Temp["answer"]}")
+            print(f"""{Temp["answer"]}""")
 
-        # return#temp
         # 自动输入
-        if QuestionType == "单选题":
-            OptionWraps = driver.find_elements(By.CLASS_NAME, "option-wrap")
-            # 把AI回答变成格式化答案
-            AnswerList = []
-            for Item in JsonData["questions"]:
-                AnswerList.append(ord(Item["answer"]) - ord("A"))
-            # 选中指定答案
-            for index, OptionWrap in enumerate(OptionWraps):
+
+        match QuestionType:
+            case "单选题":
+                OptionWraps = driver.find_elements(By.CLASS_NAME, "option-wrap")
+                # 把AI回答变成格式化答案
+                AnswerList = []
+                for Item in JsonData["questions"]:
+                    AnswerList.append(ord(Item["answer"]) - ord("A"))
+                # 选中指定答案
+                for index, OptionWrap in enumerate(OptionWraps):
+                    Options = OptionWrap.find_elements(By.CLASS_NAME, "option")
+                    if index < len(AnswerList):
+                        Options[AnswerList[index]].click()
+
+            case "多选题":
+                OptionWrap = driver.find_element(By.CLASS_NAME, "option-wrap")
+                # 重置所有选项的类名
+                SelectedOptions = OptionWrap.find_elements(By.CSS_SELECTOR, ".option.selected.isNotReview")
+                for SelectedOption in SelectedOptions:
+                    SelectedOption.click()
+                # 把AI回答变成格式化答案
+                AnswerList = []
+                for Item in JsonData["questions"][0]["answer"]:
+                    if Item != "|":
+                        AnswerList.append(ord(Item) - ord("A"))
+                # 选中指定答案
                 Options = OptionWrap.find_elements(By.CLASS_NAME, "option")
-                if index < len(AnswerList):
+                for index in range(len(AnswerList)):
                     Options[AnswerList[index]].click()
-            Submit()
-        elif QuestionType == "多选题":
-            OptionWrap = driver.find_element(By.CLASS_NAME, "option-wrap")
-            # 重置所有选项的类名
-            SelectedOptions = OptionWrap.find_elements(By.CSS_SELECTOR, ".option.selected.isNotReview")
-            for SelectedOption in SelectedOptions:
-                SelectedOption.click()
-            # 把AI回答变成格式化答案
-            AnswerList = []
-            for Item in JsonData["questions"][0]["answer"]:
-                if Item != "|":
-                    AnswerList.append(ord(Item) - ord("A"))
-            # 选中指定答案
-            Options = OptionWrap.find_elements(By.CLASS_NAME, "option")
-            for index in range(len(AnswerList)):
-                Options[AnswerList[index]].click()
-            Submit()
-        elif QuestionType == "填空题":
-            # 把AI回答变成格式化答案
-            AnswerList = []
-            for Item in JsonData["questions"]:
-                AnswerList.extend(Item["answer"].split("|"))
-            # 填答案
-            Containers = driver.find_element(By.CSS_SELECTOR, ".question-common-abs-scoop.comp-scoop-reply")
-            Blanks = Containers.find_elements(By.CSS_SELECTOR, "div.comp-abs-input.input-user-answer.input-can-focus > input")
-            for Index, Blank in enumerate(Blanks):
-                Blank.clear()
-                Blank.send_keys(AnswerList[Index])
-            # 提交
-            Submit()
-        elif QuestionType == "回答题":
-            print(JsonData)
-            TextBoxs = driver.find_elements(By.CLASS_NAME, "question-inputbox-input")
-            # 清空原有内容并输入新的答案
-            for Index, TextBox in enumerate(TextBoxs):
-                TextBox.clear()
-                TextBox.send_keys(JsonData["questions"][Index]["answer"])
-            Submit()
+
+            case "填空题":
+                # 把AI回答变成格式化答案
+                AnswerList = []
+                for Item in JsonData["questions"]:
+                    AnswerList.extend(Item["answer"].split("|"))
+                # 填答案
+                Containers = driver.find_element(By.CSS_SELECTOR, ".question-common-abs-scoop.comp-scoop-reply")
+                Blanks = Containers.find_elements(By.CSS_SELECTOR, "div.comp-abs-input.input-user-answer.input-can-focus > input")
+                for Index, Blank in enumerate(Blanks):
+                    Blank.clear()
+                    Blank.send_keys(AnswerList[Index])
+
+            case "回答题":
+                print(JsonData)
+                TextBoxs = driver.find_elements(By.CLASS_NAME, "question-inputbox-input")
+                # 清空原有内容并输入新的答案
+                for Index, TextBox in enumerate(TextBoxs):
+                    TextBox.clear()
+                    TextBox.send_keys(JsonData["questions"][Index]["answer"])
+
+        Submit()
+
     except Exception as e:
         print(f"Error occurs: {e}")
 
 
-if __name__ == "__main__":
+@reloading
+def Auto():
+    print("开始全自动答题, 请勿操作浏览器!")
+    print("正在获取单元列表")
+    Units = driver.find_elements(By.CSS_SELECTOR, '[data-index]')
+    for i in Units:
+        i.click ()
+        time.sleep(1)
+
+@reloading
+def Manual():
     while True:
-        print ("\n等待下一步操作: [Y]抓取当前页面并分析(default) [Q]关闭浏览器并退出程序")
-        Operate = input("Input Operate: ").upper()
+        print("\n当前模式: 半自动; 手动等待下一步操作: [1]抓取当前页面并分析(default) [2]退出当前模式")
+        Operate = input("Input Operate: ")
         match Operate:
             case "":
-                main()
-            case "Y":
-                main()
-            case "Q":
-                driver.quit()
-                break
+                CompleteSingleQuestion()
+            case "1":
+                CompleteSingleQuestion()
+            case "2":
+                return
+            case _:
+                print("请输入正确的选项")
+
+
+if __name__ == "__main__":
+    while True:
+        print("\n选择模式: [1]全自动答题(请确保停留在教程目录页面) [2]半自动答题")
+        Mode = input("Input Mode: ")
+        match Mode:
+            case "1":
+                Auto()
+            case "2":
+                Manual()
             case _:
                 print("请输入正确的选项")
