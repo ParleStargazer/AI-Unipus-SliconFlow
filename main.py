@@ -19,12 +19,13 @@ ai_client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
 print("正在载入whisper模型")
 model = whisper.load_model("base")
 
-print("正在启动浏览器并自动登录U校园AI板")
+print("正在启动浏览器")
 options = Options()
 options.add_argument("--disable-logging")
 options.add_argument("--log-level=OFF")
 driver = webdriver.Edge(service=Service(EdgeChromiumDriverManager().install(), log_path="nul"), options=options)
 
+print("正在自动登录U校园AI板")
 driver.get("https://ucloud.unipus.cn/home")
 WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.NAME, "username")))
 driver.find_element(By.NAME, "username").send_keys(username)
@@ -63,7 +64,7 @@ def auto():
         elements = active_unit_area.find_elements(By.CLASS_NAME, "courses-unit_taskItemContainer__gkVix")
         for index, element in enumerate(elements):
             text_content = element.text  # 获取元素的文本内容
-            if "必修" in text_content and "已完成" not in text_content:
+            if "必修" in text_content :#and "已完成" not in text_content:
                 unit_pending_questions.append(index)
         pending_questions.append({"data-index": unit.get_attribute("data-index"), "questions": unit_pending_questions})
     for unit in pending_questions:
