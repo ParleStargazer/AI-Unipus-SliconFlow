@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 from openai import OpenAI
 
 from media_process import download_media
-from prompts import SingleChoiceQuestionPrompt, MultipleChoiceQuestionPrompt, BlankQuestion, InputBoxQuestion, TranslateQuestion
+from prompts import SingleChoiceQuestionPrompt, MultipleChoiceQuestionPrompt, BlankQuestion, InputBoxQuestion, TranslateQuestion, BlankChangeQuestion
 
 from reloading import reloading
 
@@ -57,7 +57,7 @@ def complete_submit_question(driver: WebDriver, QuestionType, JsonData):
             for Index, Blank in enumerate(Blanks):
                 Blank.clear()
                 Blank.send_keys(AnswerList[Index])
-        case "回答题":
+        case "回答题" | "阅读文章回答问题题":
             TextBoxs = driver.find_elements(By.CLASS_NAME, "question-inputbox-input")
             # 清空原有内容并输入新的答案
             for Index, TextBox in enumerate(TextBoxs):
@@ -68,6 +68,16 @@ def complete_submit_question(driver: WebDriver, QuestionType, JsonData):
             for Index, TextBox in enumerate(TextBoxs):
                 TextBox.clear()
                 TextBox.send_keys(JsonData["questions"][Index]["answer"])
+        case "选词填空题(可变)":
+            print("1")
+            AnswerList = []
+            for Item in JsonData["questions"]:
+                AnswerList.extend(Item["answer"].split("|"))
+            Containers = driver.find_element(By.CLASS_NAME, "component-htmlview")
+            Blanks = driver.find_elements(By.CSS_SELECTOR, ".input-wrapper > .comp-abs-input > input")
+            for Index, Blank in enumerate(Blanks):
+                Blank.clear()
+                Blank.send_keys(AnswerList[Index])
     Submit(driver=driver)
 
 @reloading
@@ -120,7 +130,6 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
             #无音频或者视频
             print("没有音频或视频文件")
             #TODO: 
-            # 阅读选择题
             # 阅读文章回答问题题
             # 选词填空题(不可变)
             # 选词填空题(可变)
@@ -135,7 +144,7 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                 question_type = "词汇选择题"
             elif "Choose the best answer" in direction_text or "choose the best answer" in direction_text:
                 question_type = "阅读选择题"
-            elif "Answer the following questions according to the text" in direction_text:
+            elif "Answer the following questions according to the text" in direction_text or "Think about the following questions" in direction_text:
                 question_type = "阅读文章回答问题题"
             elif "Fill in the blanks" in direction_text and "Change the form" in direction_text:
                 question_type = "选词填空题(可变)"
@@ -161,15 +170,25 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                     question_data = driver.find_element(By.CLASS_NAME, "reply-wrap")
                     Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
                     AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{question_text_data.text}\n{Question}"
-                    pass
                 case "词汇选择题":
                     WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
                     question_data = driver.find_element(By.CLASS_NAME, "reply-wrap")
                     Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
                     AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{Question}"
                 case "阅读文章回答问题题":
-                    pass
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "text-material-wrapper")))
+                    question_text_data = driver.find_element(By.CLASS_NAME, "text-material-wrapper")
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
+                    question_data = driver.find_element(By.CLASS_NAME, "reply-wrap")
+                    Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
+                    AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{question_text_data.text}\n{Question}"
                 case "选词填空题(可变)":
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".question-material-banked-cloze-reply.clearfix")))
+                    question_data = driver.find_element(By.CSS_SELECTOR, ".question-material-banked-cloze-reply.clearfix")
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "question-material-banked-cloze-scoop")))
+                    question_text_data = driver.find_element(By.CLASS_NAME, "question-material-banked-cloze-scoop")
+                    Question = f"以下是题目,本次题目类型为{question_type}:\n{"以下是选项\n" + question_data.text}"
+                    AIQuestion = f"{BlankChangeQuestion}\n{Direction}\n{question_text_data.text}\n{Question}"
                     pass
                 case "选词填空题(不可变)":
                     pass
@@ -191,8 +210,9 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
         Answer = ai_response.choices[0].message.content
         print(f"以下为DeepSeek答案:\n{Answer}\n---------------------------")
         answer_matched = re.search(r"\{[\s\S]*\}", Answer)
-        json_str = answer_matched.group(0)
+        json_str = answer_matched.group(0).replace("\",", "\"")
         json_data = json.loads(json_str)
+        print(1)
         print("DeepSeek最终答案是:")
         for Temp in json_data["questions"]:
             print(f"""{Temp["answer"]}""")
@@ -201,7 +221,6 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
         
     except Exception as e:
         print(f"Error occurs: {e}")
-        # 自动输入
 
 
     except Exception as e:
