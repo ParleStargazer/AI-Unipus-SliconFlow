@@ -1,4 +1,7 @@
 import time
+import whisper
+import threading
+from reloading import reloading
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -6,11 +9,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.edge.options import Options
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
-from reloading import reloading
+from openai import OpenAI
 
-from secret import username, password
+from secret import username, password, api_key
 from tools import complete_single_question
 
+ai_client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
+
+print("正在载入whisper模型")
+model = whisper.load_model("base")
 
 print("正在启动浏览器并自动登录U校园AI板")
 options = Options()
@@ -19,18 +26,26 @@ options.add_argument("--log-level=OFF")
 driver = webdriver.Edge(service=Service(EdgeChromiumDriverManager().install(), log_path="nul"), options=options)
 
 driver.get("https://ucloud.unipus.cn/home")
-WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.NAME, "username")))
+WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.NAME, "username")))
 driver.find_element(By.NAME, "username").send_keys(username)
-WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.NAME, "password")))
 driver.find_element(By.NAME, "password").send_keys(password)
-WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.ID, "login")))
 driver.find_element(By.ID, "login").click()
-WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CLASS_NAME, "layui-layer-btn0")))
+WebDriverWait(driver, 1).until(EC.element_to_be_clickable((By.CLASS_NAME, "layui-layer-btn0")))
 driver.find_element(By.CLASS_NAME, "layui-layer-btn0").click()
-WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary")))
+WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary")))
 driver.find_element(By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary").click()
-WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ")))
+WebDriverWait(driver, 1).until(EC.element_to_be_clickable((By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ")))
 driver.find_element(By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ").click()
+
+
+def listen_for_interrupt():
+    global auto_running
+    while True:
+        print ("输入任意非空字符以中断")
+        user_input = input()
+        if user_input.strip():
+            auto_running = False
+            return
 
 
 @reloading
@@ -43,7 +58,7 @@ def auto():
     for unit in units:
         unit_pending_questions = []
         unit.click()
-        time.sleep(1)
+        time.sleep(0.5)
         active_unit_area = driver.find_element(By.CLASS_NAME, "unipus-tabs_itemActive__x0WVI")
         elements = active_unit_area.find_elements(By.CLASS_NAME, "courses-unit_taskItemContainer__gkVix")
         for index, element in enumerate(elements):
@@ -54,16 +69,21 @@ def auto():
     for unit in pending_questions:
         questions = unit["questions"]
         for question in questions:
+            if not auto_running:
+                print("全自动答题已中断")
+                return
             print(f"正在进入Unit{unit['data-index']}的第{question}题")
             driver.get(course_url)
             WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-index]")))
             driver.find_element(By.CSS_SELECTOR, f'[data-index="{unit["data-index"]}"]').click()
-            time.sleep(1)
+            time.sleep(0.5)
             active_unit_area = driver.find_element(By.CLASS_NAME, "unipus-tabs_itemActive__x0WVI")
             elements = active_unit_area.find_elements(By.CLASS_NAME, "courses-unit_taskItemContainer__gkVix")
             elements[question].click()
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CLASS_NAME, "abs-direction")))
             print("开始自动答题")
-            time.sleep(5)
+            time.sleep(0.5)
+            complete_single_question(driver=driver, ai_client=ai_client, model=model)
 
 
 @reloading
@@ -73,9 +93,9 @@ def manual():
         operate = input("Input Operate: ")
         match operate:
             case "":
-                complete_single_question()
+                complete_single_question(driver=driver, ai_client=ai_client, model=model)
             case "1":
-                complete_single_question()
+                complete_single_question(driver=driver, ai_client=ai_client, model=model)
             case "2":
                 return
             case _:
@@ -88,6 +108,9 @@ if __name__ == "__main__":
         mode = input("Input Mode: ")
         match mode:
             case "1":
+                auto_running = True
+                listener_thread = threading.Thread(target=listen_for_interrupt, daemon=True)
+                listener_thread.start()
                 auto()
             case "2":
                 manual()
