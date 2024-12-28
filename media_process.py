@@ -25,3 +25,10 @@ def export_wav(file_path, file_extension):
         raise ValueError(f"不支持的文件格式: {file_extension}")
     audio.export("./.cache/Temp.wav", format="wav")
     print("成功转换为WAV格式音频")
+
+
+if __name__ == "__main__":
+    from main import main
+
+    print("It seems you're not running main.py, but it's okay, we're calling main() now.")
+    main()

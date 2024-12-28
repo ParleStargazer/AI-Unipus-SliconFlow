@@ -73,7 +73,7 @@ def auto():
             if not auto_running:
                 print("全自动答题已中断")
                 return
-            print(f"正在进入Unit{unit['data-index']}的第{question}题")
+            print(f"\n正在进入Unit{unit['data-index']}的第{question}题")
             driver.get(course_url)  # 返回课程目录并重新寻址题目
             WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-index]")))
             driver.find_element(By.CSS_SELECTOR, f'[data-index="{unit["data-index"]}"]').click()
@@ -110,12 +110,13 @@ def manual():
                 print("请输入正确的选项")
 
 
-if __name__ == "__main__":
+def main():
     while True:
         print("\n选择模式: [1]全自动答题(请确保停留在教程目录页面) [2]半自动答题")
         mode = input("Input Mode: ")
         match mode:
             case "1":
+                global auto_running
                 auto_running = True
                 listener_thread = threading.Thread(target=listen_for_interrupt, daemon=True)
                 listener_thread.start()
@@ -124,3 +125,7 @@ if __name__ == "__main__":
                 manual()
             case _:
                 print("请输入正确的选项")
+
+
+if __name__ == "__main__":
+    main()
