@@ -8,7 +8,6 @@ from selenium.webdriver.edge.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
 from openai import OpenAI
 
 from media_process import download_media
@@ -19,11 +18,10 @@ def Submit(driver: WebDriver):
     submit_button = driver.find_element(By.CLASS_NAME, "btn")
     submit_button.click()
     try:
-        WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CLASS_NAME, "ant-btn-primary")))
-        yes_button = driver.find_element(By.CLASS_NAME, "ant-btn-primary")
-        yes_button.click()
+        WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CLASS_NAME, "ant-btn-primary"))).click()
+        print("存在二次确认, 已确认")
     except Exception:
-        print("无二次确认")
+        pass
 
 
 @reloading
@@ -106,10 +104,23 @@ def submit_single_question(driver: WebDriver, question_type, json_data):
 @reloading
 def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whisper):
     try:
+        if driver.find_elements(By.CLASS_NAME, "layout-reply-container"):
+            reply_area = driver.find_element(By.CLASS_NAME, "layout-reply-container")
+        else:
+            print("本题没有回答区域")
+            if driver.find_elements(By.CLASS_NAME, "video-box"):
+                print("视频题, 即将开始播放视频")
+                watch_video(driver)
+            return
+
+        if reply_area.find_elements(By.TAG_NAME, "img"):
+            print("本题回答区域有图片, 无法识别处理")
+            return
+
         # 查看有没有音频或者视频
         match = re.search(r'src="([^"]+\.(mp3|mp4))(#|")', driver.page_source)
         if match:
-            print("有音频或者视频文件")
+            print("有音视频文件")
             if driver.find_elements(By.CLASS_NAME, "question-common-abs-choice"):
                 if driver.find_elements(By.CLASS_NAME, "multipleChoice"):
                     question_type = "多选题"
@@ -120,17 +131,12 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                     question_type = "填空题"
                 elif driver.find_elements(By.CLASS_NAME, "question-inputbox"):
                     question_type = "回答题"
-                elif driver.find_elements(By.CLASS_NAME, "video-box"):
-                    print("视频题, 即将开始播放视频")
-                    watch_video(driver)
-                    return
                 else:
                     print("不支持的题型!")
                     return
             print(question_type)
 
-            question_data = driver.find_element(By.CLASS_NAME, "layout-reply-container")
-            Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
+            question = f"以下是题目,本次题目类型为{question_type}:\n{reply_area.text}"
 
             # 获取mp3路径并下载
             match = re.search(r'src="([^"]+\.(mp3|mp4))(#|")', driver.page_source)
@@ -146,13 +152,13 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
             Direction = "以下是题目的说明, 注意说明中可能包含了答题要求的关键信息, 请优先遵循题目说明中的要求, 所有的视频和音频已经转化成英文文章:\n" + driver.find_element(By.CLASS_NAME, "abs-direction").text
             match question_type:
                 case "单选题":
-                    AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{ListeningData}\n{Question}"
+                    AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{ListeningData}\n{question}"
                 case "多选题":
-                    AIQuestion = f"{MultipleChoiceQuestionPrompt}\n{Direction}\n{ListeningData}\n{Question}"
+                    AIQuestion = f"{MultipleChoiceQuestionPrompt}\n{Direction}\n{ListeningData}\n{question}"
                 case "填空题":
-                    AIQuestion = f"{BlankQuestion}\n{Direction}\n{ListeningData}\n{Question}"
+                    AIQuestion = f"{BlankQuestion}\n{Direction}\n{ListeningData}\n{question}"
                 case "回答题":
-                    AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{ListeningData}\n{Question}"
+                    AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{ListeningData}\n{question}"
         else:
             # 无音频或者视频
             print("没有音频或视频文件")
@@ -187,35 +193,27 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
             match question_type:
                 case "翻译题":
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".layout-reply-container.full")))
-                    # question_data = driver.find_element(By.CSS_SELECTOR, ".layout-reply-container.full")
-                    Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
-                    AIQuestion = f"{TranslateQuestion}\n{Direction}\n{Question}"
+                    question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
+                    AIQuestion = f"{TranslateQuestion}\n{Direction}\n{question}"
                 case "阅读选择题":
                     question_text_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "text-material-wrapper")))
-                    # question_text_data = driver.find_element(By.CLASS_NAME, "text-material-wrapper")
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
-                    # question_data = driver.find_element(By.CLASS_NAME, "reply-wrap")
-                    Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
-                    AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{question_text_data.text}\n{Question}"
+                    question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
+                    AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{question_text_data.text}\n{question}"
                 case "词汇选择题":
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
-                    # question_data = driver.find_element(By.CLASS_NAME, "reply-wrap")
-                    Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
-                    AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{Question}"
+                    question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
+                    AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{question}"
                 case "阅读文章回答问题题":
                     question_text_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "text-material-wrapper")))
-                    # question_text_data = driver.find_element(By.CLASS_NAME, "text-material-wrapper")
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
-                    # question_data = driver.find_element(By.CLASS_NAME, "reply-wrap")
-                    Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
-                    AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{question_text_data.text}\n{Question}"
+                    question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
+                    AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{question_text_data.text}\n{question}"
                 case "选词填空题(可变)":
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".question-material-banked-cloze-reply.clearfix")))
-                    # question_data = driver.find_element(By.CSS_SELECTOR, ".question-material-banked-cloze-reply.clearfix")
                     question_text_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "question-material-banked-cloze-scoop")))
-                    # question_text_data = driver.find_element(By.CLASS_NAME, "question-material-banked-cloze-scoop")
-                    Question = f"以下是题目,本次题目类型为{question_type},以下是选项:\n{question_data.text}"
-                    AIQuestion = f"{BlankChangeQuestion}\n{Direction}\n{question_text_data.text}\n{Question}"
+                    question = f"以下是题目,本次题目类型为{question_type},以下是选项:\n{question_data.text}"
+                    AIQuestion = f"{BlankChangeQuestion}\n{Direction}\n{question_text_data.text}\n{question}"
                     pass
                 case "选词填空题(不可变)":
                     print("暂未适配")

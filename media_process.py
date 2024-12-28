@@ -6,7 +6,7 @@ from pydub import AudioSegment
 def download_media(url):
     file_extension = os.path.splitext(url)[-1].lower()
     file_path = f"./.cache/Temp{file_extension}"
-    print(f"下载文件 {file_extension}")
+    print(f"下载{file_extension}文件中")
     response = requests.get(url, stream=True)
     with open(file_path, "wb") as f:
         for chunk in response.iter_content(chunk_size=8192):
