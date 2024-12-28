@@ -11,10 +11,10 @@ from selenium.webdriver.common.by import By
 from openai import OpenAI
 
 from media_process import download_media
-from prompts import SingleChoiceQuestionPrompt, MultipleChoiceQuestionPrompt, BlankQuestion, InputBoxQuestion, TranslateQuestion, BlankChangeQuestion
+from prompts import single_choice_question_prompt, multiple_choice_question_prompt, blank_question, input_box_question, translate_question, blank_change_question
 
 
-def Submit(driver: WebDriver):
+def submit(driver: WebDriver):
     submit_button = driver.find_element(By.CLASS_NAME, "btn")
     submit_button.click()
     try:
@@ -98,7 +98,7 @@ def submit_single_question(driver: WebDriver, question_type, json_data):
             for index, blank in enumerate(blanks):
                 blank.clear()
                 blank.send_keys(answer_list[index])
-    Submit(driver=driver)
+    submit(driver=driver)
 
 
 @reloading
@@ -146,19 +146,19 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                 os.makedirs(".cache")
             file_path, file_extension = download_media(aduio_url)
             print("正在进行语音识别")
-            ListeningData = "以下内容是视频或者音频转成的文章内容:\n" + model.transcribe(file_path)["text"]
+            listening_data = "以下内容是视频或者音频转成的文章内容:\n" + model.transcribe(file_path)["text"]
             print("语音识别完成")
 
-            Direction = "以下是题目的说明, 注意说明中可能包含了答题要求的关键信息, 请优先遵循题目说明中的要求, 所有的视频和音频已经转化成英文文章:\n" + driver.find_element(By.CLASS_NAME, "abs-direction").text
+            direction = "以下是题目的说明, 注意说明中可能包含了答题要求的关键信息, 请优先遵循题目说明中的要求, 所有的视频和音频已经转化成英文文章:\n" + driver.find_element(By.CLASS_NAME, "abs-direction").text
             match question_type:
                 case "单选题":
-                    AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{ListeningData}\n{question}"
+                    ai_question = f"{single_choice_question_prompt}\n{direction}\n{listening_data}\n{question}"
                 case "多选题":
-                    AIQuestion = f"{MultipleChoiceQuestionPrompt}\n{Direction}\n{ListeningData}\n{question}"
+                    ai_question = f"{multiple_choice_question_prompt}\n{direction}\n{listening_data}\n{question}"
                 case "填空题":
-                    AIQuestion = f"{BlankQuestion}\n{Direction}\n{ListeningData}\n{question}"
+                    ai_question = f"{blank_question}\n{direction}\n{listening_data}\n{question}"
                 case "回答题":
-                    AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{ListeningData}\n{question}"
+                    ai_question = f"{input_box_question}\n{direction}\n{listening_data}\n{question}"
         else:
             # 无音频或者视频
             print("没有音频或视频文件")
@@ -189,31 +189,31 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
 
             print(question_type)
 
-            Direction = "以下是题目的说明, 注意说明中可能包含了答题要求的关键信息, 请优先遵循题目说明中的要求\n" + direction_text
+            direction = "以下是题目的说明, 注意说明中可能包含了答题要求的关键信息, 请优先遵循题目说明中的要求\n" + direction_text
             match question_type:
                 case "翻译题":
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".layout-reply-container.full")))
                     question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
-                    AIQuestion = f"{TranslateQuestion}\n{Direction}\n{question}"
+                    ai_question = f"{translate_question}\n{direction}\n{question}"
                 case "阅读选择题":
                     question_text_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "text-material-wrapper")))
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
                     question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
-                    AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{question_text_data.text}\n{question}"
+                    ai_question = f"{single_choice_question_prompt}\n{direction}\n{question_text_data.text}\n{question}"
                 case "词汇选择题":
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
                     question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
-                    AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{question}"
+                    ai_question = f"{single_choice_question_prompt}\n{direction}\n{question}"
                 case "阅读文章回答问题题":
                     question_text_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "text-material-wrapper")))
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
                     question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
-                    AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{question_text_data.text}\n{question}"
+                    ai_question = f"{input_box_question}\n{direction}\n{question_text_data.text}\n{question}"
                 case "选词填空题(可变)":
                     question_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".question-material-banked-cloze-reply.clearfix")))
                     question_text_data = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "question-material-banked-cloze-scoop")))
                     question = f"以下是题目,本次题目类型为{question_type},以下是选项:\n{question_data.text}"
-                    AIQuestion = f"{BlankChangeQuestion}\n{Direction}\n{question_text_data.text}\n{question}"
+                    ai_question = f"{blank_change_question}\n{direction}\n{question_text_data.text}\n{question}"
                     pass
                 case "选词填空题(不可变)":
                     print("暂未适配")
@@ -229,19 +229,19 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                     "role": "system",
                     "content": """欢迎来到英语文章解析与逻辑推理的世界。请提供一篇英语文章和一些题目""",
                 },
-                {"role": "user", "content": AIQuestion},
+                {"role": "user", "content": ai_question},
             ],
             temperature=0.2,
         )
-        Answer = ai_response.choices[0].message.content
-        print(f"以下为DeepSeek答案:\n{Answer}\n---------------------------")
-        answer_matched = re.search(r"\{[\s\S]*\}", Answer)
+        answer = ai_response.choices[0].message.content
+        print(f"以下为DeepSeek答案:\n{answer}\n---------------------------")
+        answer_matched = re.search(r"\{[\s\S]*\}", answer)
         json_str = answer_matched.group(0).replace('",', '"')
         json_data = json.loads(json_str)
         print(1)
         print("DeepSeek最终答案是:")
-        for Temp in json_data["questions"]:
-            print(f"""{Temp["answer"]}""")
+        for i in json_data["questions"]:
+            print(f"""{i["answer"]}""")
 
         submit_single_question(driver=driver, question_type=question_type, json_data=json_data)
 
