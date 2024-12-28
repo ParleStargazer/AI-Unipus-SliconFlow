@@ -17,7 +17,7 @@ def Submit(driver: WebDriver):
     submit_button = driver.find_element(By.CLASS_NAME, "btn")
     submit_button.click()
     try:
-        WebDriverWait(driver, 2).until(EC.element_to_be_clickable(By.CLASS_NAME, "ant-btn-primary"))
+        WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CLASS_NAME, "ant-btn-primary")))
         yes_button = driver.find_element(By.CLASS_NAME, "ant-btn-primary")
         yes_button.click()
     except Exception:
@@ -161,33 +161,33 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
             Direction = "以下是题目的说明, 注意说明中可能包含了答题要求的关键信息, 请优先遵循题目说明中的要求\n" + direction_text
             match question_type:
                 case "翻译题":
-                    WebDriverWait(driver, 2).until(EC.presence_of_element_located(By.CSS_SELECTOR, ".layout-reply-container.full"))
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".layout-reply-container.full")))
                     question_data = driver.find_element(By.CSS_SELECTOR, ".layout-reply-container.full")
                     Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
                     AIQuestion = f"{TranslateQuestion}\n{Direction}\n{Question}"
                 case "阅读选择题":
-                    WebDriverWait(driver, 2).until(EC.presence_of_element_located(By.CLASS_NAME, "text-material-wrapper"))
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "text-material-wrapper")))
                     question_text_data = driver.find_element(By.CLASS_NAME, "text-material-wrapper")
-                    WebDriverWait(driver, 2).until(EC.presence_of_element_located(By.CLASS_NAME, "reply-wrap"))
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
                     question_data = driver.find_element(By.CLASS_NAME, "reply-wrap")
                     Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
                     AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{question_text_data.text}\n{Question}"
                 case "词汇选择题":
-                    WebDriverWait(driver, 2).until(EC.presence_of_element_located(By.CLASS_NAME, "reply-wrap"))
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
                     question_data = driver.find_element(By.CLASS_NAME, "reply-wrap")
                     Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
                     AIQuestion = f"{SingleChoiceQuestionPrompt}\n{Direction}\n{Question}"
                 case "阅读文章回答问题题":
-                    WebDriverWait(driver, 2).until(EC.presence_of_element_located(By.CLASS_NAME, "text-material-wrapper"))
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "text-material-wrapper")))
                     question_text_data = driver.find_element(By.CLASS_NAME, "text-material-wrapper")
-                    WebDriverWait(driver, 2).until(EC.presence_of_element_located(By.CLASS_NAME, "reply-wrap"))
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "reply-wrap")))
                     question_data = driver.find_element(By.CLASS_NAME, "reply-wrap")
                     Question = f"以下是题目,本次题目类型为{question_type}:\n{question_data.text}"
                     AIQuestion = f"{InputBoxQuestion}\n{Direction}\n{question_text_data.text}\n{Question}"
                 case "选词填空题(可变)":
-                    WebDriverWait(driver, 2).until(EC.presence_of_element_located(By.CSS_SELECTOR, ".question-material-banked-cloze-reply.clearfix"))
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".question-material-banked-cloze-reply.clearfix")))
                     question_data = driver.find_element(By.CSS_SELECTOR, ".question-material-banked-cloze-reply.clearfix")
-                    WebDriverWait(driver, 2).until(EC.presence_of_element_located(By.CLASS_NAME, "question-material-banked-cloze-scoop"))
+                    WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, "question-material-banked-cloze-scoop")))
                     question_text_data = driver.find_element(By.CLASS_NAME, "question-material-banked-cloze-scoop")
                     Question = f"以下是题目,本次题目类型为{question_type},以下是选项:\n{question_data.text}"
                     AIQuestion = f"{BlankChangeQuestion}\n{Direction}\n{question_text_data.text}\n{Question}"

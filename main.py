@@ -27,15 +27,15 @@ driver = webdriver.Edge(service=Service(EdgeChromiumDriverManager().install(), l
 
 print("正在自动登录U校园AI板")
 driver.get("https://ucloud.unipus.cn/home")
-WebDriverWait(driver, 5).until(EC.element_to_be_clickable(By.NAME, "username"))
+WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.NAME, "username")))
 driver.find_element(By.NAME, "username").send_keys(username)
 driver.find_element(By.NAME, "password").send_keys(password)
 driver.find_element(By.ID, "login").click()
-WebDriverWait(driver, 1).until(EC.element_to_be_clickable(By.CLASS_NAME, "layui-layer-btn0"))
+WebDriverWait(driver, 1).until(EC.element_to_be_clickable((By.CLASS_NAME, "layui-layer-btn0")))
 driver.find_element(By.CLASS_NAME, "layui-layer-btn0").click()
-WebDriverWait(driver, 5).until(EC.element_to_be_clickable(By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary"))
+WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary")))
 driver.find_element(By.CSS_SELECTOR, ".ucm-ant-btn.ucm-ant-btn-round.ucm-ant-btn-primary").click()
-WebDriverWait(driver, 1).until(EC.element_to_be_clickable(By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ"))
+WebDriverWait(driver, 1).until(EC.element_to_be_clickable((By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ")))
 driver.find_element(By.CLASS_NAME, "pop-up_pop-up-modal-cheat-notice-content-botton__iS8oJ").click()
 
 
@@ -75,13 +75,13 @@ def auto():
                 return
             print(f"正在进入Unit{unit['data-index']}的第{question}题")
             driver.get(course_url)  # 返回课程目录并重新寻址题目
-            WebDriverWait(driver, 10).until(EC.element_to_be_clickable(By.CSS_SELECTOR, "[data-index]"))
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-index]")))
             driver.find_element(By.CSS_SELECTOR, f'[data-index="{unit["data-index"]}"]').click()
             time.sleep(0.5)
             active_unit_area = driver.find_element(By.CLASS_NAME, "unipus-tabs_itemActive__x0WVI")
             elements = active_unit_area.find_elements(By.CLASS_NAME, "courses-unit_taskItemContainer__gkVix")
             elements[question].click()
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located(By.CLASS_NAME, "abs-direction"))  # 等待题目加载完成
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "abs-direction")))  # 等待题目加载完成
             time.sleep(0.5)
             # 处理弹窗
             iKnow = driver.find_elements(By.CLASS_NAME, "iKnow")
