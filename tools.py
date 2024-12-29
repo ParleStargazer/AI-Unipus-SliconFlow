@@ -130,16 +130,22 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                     question_type = "单选题"
             else:
                 if driver.find_elements(By.CLASS_NAME, "question-common-abs-scoop"):
+                    question_type = "填空题"
                     if driver.find_elements(By.CLASS_NAME, "comp-scoop-reply-dropdown-selection-overflow"):
-                        print("伪填空选择题, 不支持, 请于手动模式中处理")
-                        return
-                    else:
-                        question_type = "填空题"
+                        if not debug:
+                            print("伪填空选择题, 不支持, 请于手动模式中处理")
+                            return
                 elif driver.find_elements(By.CLASS_NAME, "question-inputbox"):
                     question_type = "回答题"
                 else:
                     print("不支持的题型!")
-                    return
+                    if not debug:
+                        return
+                    match input("是否强行解析? [Y/n]: ").upper():
+                        case "Y" | "":
+                            question_type = "(!未知题型!请试图理解并处理!)"
+                        case _:
+                            return
             print(question_type)
 
             question = f"以下是题目,本次题目类型为{question_type}:\n{reply_area.text}"
@@ -165,6 +171,11 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                     ai_question = f"{blank_question}\n{direction}\n{listening_data}\n{question}"
                 case "回答题":
                     ai_question = f"{input_box_question}\n{direction}\n{listening_data}\n{question}"
+                case "(!未知题型!请试图理解并处理!)":
+                    ai_question = f"{input_box_question}\n{direction}\n{listening_data}\n{question}"
+                case _:
+                    print("Fuck U")
+                    return
         else:
             # 无音频或者视频
             if debug:
@@ -226,7 +237,8 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                     print("暂未适配")
                     return
                 case _:
-                    pass
+                    print("Fuck U")
+                    return
 
         print("正在等待DeepSeek回答")
         ai_response = ai_client.chat.completions.create(
@@ -242,12 +254,7 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
         )
         answer = ai_response.choices[0].message.content
         if debug:
-            print(
-                "--------------------------------",
-                "以下为DeepSeek回答:",
-                f"{answer}",
-                "--------------------------------",
-            )
+            print(f"--------------------------------\n以下为DeepSeek回答:\n{answer}\n--------------------------------")
         answer_matched = re.search(r"\{[\s\S]*\}", answer)
         json_str = answer_matched.group(0).replace('",', '"')
         json_data = json.loads(json_str)

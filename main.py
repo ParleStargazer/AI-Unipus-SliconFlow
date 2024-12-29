@@ -71,8 +71,7 @@ def auto():
                 print(f"  [{question['index']}] {question['text']}")
         else:
             print("  None")
-    print("开始自动答题? [Y/n]")
-    match input().upper():
+    match input("开始自动答题? [Y/n]: ").upper():
         case "Y" | "":
             pass
         case "N":
@@ -109,12 +108,10 @@ def auto():
 @reloading
 def manual():
     while True:
-        print("\n当前模式: 半自动; 手动等待下一步操作: [1]抓取当前页面并分析(default) [2]退出当前模式")
+        print("\n手动等待下一步操作: [1]抓取当前页面并分析(default) [2]退出当前模式")
         operate = input("Input Operate Mode: ")
         match operate:
-            case "":
-                complete_single_question(driver=driver, ai_client=ai_client, model=model, debug=True)
-            case "1":
+            case "1" | "":
                 complete_single_question(driver=driver, ai_client=ai_client, model=model, debug=True)
             case "2":
                 return
