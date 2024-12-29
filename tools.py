@@ -116,7 +116,13 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
 
         if reply_area.find_elements(By.TAG_NAME, "img"):
             print("本题回答区域有图片, 无法识别处理")
-            return
+            if not debug:
+                return
+            match input("是否强行解析? [Y/n]: ").upper():
+                case "Y" | "":
+                    question_type = "(!未知题型!请试图理解并处理!)"
+                case _:
+                    return
 
         # 查看有没有音频或者视频
         match = re.search(r'src="([^"]+\.(mp3|mp4))(#|")', driver.page_source)
