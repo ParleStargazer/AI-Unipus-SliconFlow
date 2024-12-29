@@ -11,7 +11,7 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from openai import OpenAI
 
 from secret import username, password, api_key
-from tools import complete_single_question
+from tools import complete_single_question, submit_single_question
 
 ai_client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
 
@@ -108,12 +108,19 @@ def auto():
 @reloading
 def manual():
     while True:
-        print("\n手动等待下一步操作: [1]抓取当前页面并分析(default) [2]退出当前模式")
+        print("\n手动等待下一步操作: [1]抓取当前页面并分析(default) [2]重新填入上次答案 [3]退出当前模式")
         operate = input("Input Operate Mode: ")
         match operate:
             case "1" | "":
-                complete_single_question(driver=driver, ai_client=ai_client, model=model, debug=True)
+                result = complete_single_question(driver=driver, ai_client=ai_client, model=model, debug=True)
+                if result:
+                    question_type, json_data = result
             case "2":
+                try:
+                    submit_single_question(driver=driver, question_type=question_type, json_data=json_data, debug=True)
+                except UnboundLocalError:
+                    print("不存在上一次成功解析的答案")
+            case "3":
                 return
             case _:
                 print("请输入正确的选项")

@@ -269,6 +269,7 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
             print(f"""{i["answer"]}""")
 
         submit_single_question(driver=driver, question_type=question_type, json_data=json_data, debug=debug)
+        return [question_type, json_data]
 
     except Exception as e:
         print(f"Error occurs: {e}")
