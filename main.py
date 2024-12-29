@@ -1,6 +1,5 @@
 import time
 import whisper
-import threading
 from reloading import reloading
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -62,21 +61,38 @@ def auto():
         for index, element in enumerate(elements):  # 遍历记录下标
             text_content = element.text
             if "必修" in text_content and "已完成" not in text_content:  # 筛选未完成的必修题
-                unit_pending_questions.append(index)
+                unit_pending_questions.append({"index": index, "text": element.find_element(By.CLASS_NAME, "courses-unit_taskTypeName__99BXj").text})
         pending_questions.append({"data-index": unit.get_attribute("data-index"), "questions": unit_pending_questions})
+    print("待做题列表如下:")
+    for unit in pending_questions:
+        print(f"Unit {unit['data-index']}:")
+        if unit["questions"]:
+            for question in unit["questions"]:
+                print(f"  [{question['index']}] {question['text']}")
+        else:
+            print("  None")
+    print("开始自动答题? [Y/n]")
+    match input().upper():
+        case "Y" | "":
+            pass
+        case "N":
+            return
+        case _:
+            print("请输入正确的选项")
+            return
     for unit in pending_questions:
         questions = unit["questions"]
         for question in questions:  # 根据记录的下标遍历
-            if not auto_running:
-                print("全自动答题已中断")
-                return
-            print(f"\n正在进入Unit{unit['data-index']}的第{question}题")
+            # if not auto_running:
+            #     print("全自动答题已中断")
+            #     return
+            print(f"\n正在进入Unit{unit['data-index']}的第{question['index']}题 {question['text']}")
             driver.get(course_url)  # 返回课程目录并重新寻址题目
             WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'[data-index="{unit["data-index"]}"]'))).click()
             time.sleep(0.5)
             active_unit_area = driver.find_element(By.CLASS_NAME, "unipus-tabs_itemActive__x0WVI")
             elements = active_unit_area.find_elements(By.CLASS_NAME, "courses-unit_taskItemContainer__gkVix")
-            elements[question].click()
+            elements[question["index"]].click()
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "abs-direction")))  # 等待题目加载完成
             time.sleep(0.5)
             # 处理弹窗
@@ -97,9 +113,9 @@ def manual():
         operate = input("Input Operate Mode: ")
         match operate:
             case "":
-                complete_single_question(driver=driver, ai_client=ai_client, model=model)
+                complete_single_question(driver=driver, ai_client=ai_client, model=model, debug=True)
             case "1":
-                complete_single_question(driver=driver, ai_client=ai_client, model=model)
+                complete_single_question(driver=driver, ai_client=ai_client, model=model, debug=True)
             case "2":
                 return
             case _:
@@ -112,10 +128,10 @@ def main():
         mode = input("Input Mode: ")
         match mode:
             case "1":
-                global auto_running
-                auto_running = True
-                listener_thread = threading.Thread(target=listen_for_interrupt, daemon=True)
-                listener_thread.start()
+                # global auto_running
+                # auto_running = True
+                # listener_thread = threading.Thread(target=listen_for_interrupt, daemon=True)
+                # listener_thread.start()
                 auto()
             case "2":
                 manual()

@@ -44,7 +44,7 @@ def watch_video(driver: WebDriver):
 
 
 @reloading
-def submit_single_question(driver: WebDriver, question_type, json_data):
+def submit_single_question(driver: WebDriver, question_type, json_data, debug=False):
     match question_type:
         case "单选题" | "阅读选择题" | "词汇选择题":
             option_wraps = driver.find_elements(By.CLASS_NAME, "option-wrap")
@@ -89,7 +89,6 @@ def submit_single_question(driver: WebDriver, question_type, json_data):
                 text_box.clear()
                 text_box.send_keys(json_data["questions"][index]["answer"])
         case "选词填空题(可变)":
-            print("1")
             answer_list = []
             for item in json_data["questions"]:
                 answer_list.extend(item["answer"].split("|"))
@@ -98,11 +97,13 @@ def submit_single_question(driver: WebDriver, question_type, json_data):
             for index, blank in enumerate(blanks):
                 blank.clear()
                 blank.send_keys(answer_list[index])
-    submit(driver=driver)
+    if not debug:
+        submit(driver=driver)
+        print("已提交答案")
 
 
 @reloading
-def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whisper):
+def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whisper, debug=False):
     try:
         if driver.find_elements(By.CLASS_NAME, "layout-reply-container"):
             reply_area = driver.find_element(By.CLASS_NAME, "layout-reply-container")
@@ -120,7 +121,8 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
         # 查看有没有音频或者视频
         match = re.search(r'src="([^"]+\.(mp3|mp4))(#|")', driver.page_source)
         if match:
-            print("有音视频文件")
+            if debug:
+                print("有音视频文件")
             if driver.find_elements(By.CLASS_NAME, "question-common-abs-choice"):
                 if driver.find_elements(By.CLASS_NAME, "multipleChoice"):
                     question_type = "多选题"
@@ -128,7 +130,11 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                     question_type = "单选题"
             else:
                 if driver.find_elements(By.CLASS_NAME, "question-common-abs-scoop"):
-                    question_type = "填空题"
+                    if driver.find_elements(By.CLASS_NAME, "comp-scoop-reply-dropdown-selection-overflow"):
+                        print("伪填空选择题, 不支持, 请于手动模式中处理")
+                        return
+                    else:
+                        question_type = "填空题"
                 elif driver.find_elements(By.CLASS_NAME, "question-inputbox"):
                     question_type = "回答题"
                 else:
@@ -161,7 +167,8 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                     ai_question = f"{input_box_question}\n{direction}\n{listening_data}\n{question}"
         else:
             # 无音频或者视频
-            print("没有音频或视频文件")
+            if debug:
+                print("无音视频文件")
             # TODO:
             # 阅读文章回答问题题
             # 选词填空题(不可变)
@@ -234,16 +241,21 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
             temperature=0.2,
         )
         answer = ai_response.choices[0].message.content
-        print(f"以下为DeepSeek答案:\n{answer}\n---------------------------")
+        if debug:
+            print(
+                "--------------------------------",
+                "以下为DeepSeek回答:",
+                f"{answer}",
+                "--------------------------------",
+            )
         answer_matched = re.search(r"\{[\s\S]*\}", answer)
         json_str = answer_matched.group(0).replace('",', '"')
         json_data = json.loads(json_str)
-        print(1)
-        print("DeepSeek最终答案是:")
+        print("DeepSeek的答案是:")
         for i in json_data["questions"]:
             print(f"""{i["answer"]}""")
 
-        submit_single_question(driver=driver, question_type=question_type, json_data=json_data)
+        submit_single_question(driver=driver, question_type=question_type, json_data=json_data, debug=debug)
 
     except Exception as e:
         print(f"Error occurs: {e}")
