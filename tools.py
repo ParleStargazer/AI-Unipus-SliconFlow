@@ -100,6 +100,7 @@ def submit_single_question(driver: WebDriver, question_type, json_data, debug=Fa
     if not debug:
         submit(driver=driver)
         print("已提交答案")
+        time.sleep(2)
 
 
 @reloading
