@@ -14,3 +14,6 @@ Then copy or rename the file to `secret.py`.
 ```bash
 python -u ./main.py
 ```
+
+## Notice
+Known Issue: `reloading` does not work properly in non-UTF-8 environments. To resolve this, you need to remove all `@reloading` statements. Additionally, `whisper` requires `ffmpeg` to be present in the environment variables. If it is missing, an error will occur. Please make sure to configure the environment properly.
