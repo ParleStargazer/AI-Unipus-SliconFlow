@@ -7,3 +7,4 @@
 pip install -r ./requirements.txt\
 ```
 接着配置ffmpeg和cuda（可选），不配置cuda会调用cpu，速度相对较慢。
+由于脚本是根据我自己学校来改的，所以默认main函数里（main.py的157行开始）会有自动点击课程的操作，自己把那段代码注释掉或者删掉，然后自己加个中断就行。
