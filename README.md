@@ -1,19 +1,4 @@
-# Fuck-AI-Unipus
-No script for the AI Unipus? Let's fuck it together!\
-The script is used for the FUCKING AI Unipus (Some question types are not yet supported.)\
-**SO AI Unipus FUCK YOU**
-
-## Usage Instructions
-First, install the required dependencies.
-```bash
+从VonEquinox的版本进行了一些修改，主要是把reloading去掉了，避免编码切换的麻烦。
+安装教程：
 pip install -r ./requirements.txt
-```
-
-Complete the `secret.py.example` file with your Unipus account and password for `username` and `password`, and your [DeepSeek API key](https://platform.deepseek.com/api_keys) for `api_key`.\
-Then copy or rename the file to `secret.py`.
-```bash
-python -u ./main.py
-```
-
-## Notice
-Known Issue: `reloading` does not work properly in non-UTF-8 environments. To resolve this, you need to remove all `@reloading` statements. Additionally, `whisper` requires `ffmpeg` to be present in the environment variables. If it is missing, an error will occur. Please make sure to configure the environment properly.
+然后配置ffmpeg和cuda（可选），不配置cuda会调用cpu，速度相对较慢。
