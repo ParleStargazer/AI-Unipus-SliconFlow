@@ -24,7 +24,7 @@ def submit(driver: WebDriver):
         pass
 
 
-@reloading
+
 def watch_video(driver: WebDriver):
     video_box = driver.find_element(By.CLASS_NAME, "video-box")
     video = video_box.find_element(By.TAG_NAME, "video")
@@ -43,7 +43,7 @@ def watch_video(driver: WebDriver):
     print("视频播放完毕")
 
 
-@reloading
+
 def submit_single_question(driver: WebDriver, question_type, json_data, debug=False):
     match question_type:
         case "单选题" | "阅读选择题" | "词汇选择题":
@@ -100,10 +100,9 @@ def submit_single_question(driver: WebDriver, question_type, json_data, debug=Fa
     if not debug:
         submit(driver=driver)
         print("已提交答案")
-        time.sleep(2)
+        time.sleep(0.5)
 
 
-@reloading
 def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whisper, debug=False):
     try:
         if driver.find_elements(By.CLASS_NAME, "layout-reply-container"):
@@ -247,9 +246,9 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
                     print("Fuck U")
                     return
 
-        print("正在等待DeepSeek回答")
+        print("正在等待Qwen/QwQ-32B回答")
         ai_response = ai_client.chat.completions.create(
-            model="deepseek-chat",
+            model="Qwen/QwQ-32B",
             messages=[
                 {
                     "role": "system",
@@ -261,11 +260,11 @@ def complete_single_question(driver: WebDriver, ai_client: OpenAI, model: Whispe
         )
         answer = ai_response.choices[0].message.content
         if debug:
-            print(f"--------------------------------\n以下为DeepSeek回答:\n{answer}\n--------------------------------")
+            print(f"--------------------------------\n以下为Qwen/QwQ-32B回答:\n{answer}\n--------------------------------")
         answer_matched = re.search(r"\{[\s\S]*\}", answer)
         json_str = answer_matched.group(0).replace('",', '"')
         json_data = json.loads(json_str)
-        print("DeepSeek的答案是:")
+        print("Qwen/QwQ-32B的答案是:")
         for i in json_data["questions"]:
             print(f"""{i["answer"]}""")
 

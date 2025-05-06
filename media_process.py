@@ -7,12 +7,27 @@ def download_media(url):
     file_extension = os.path.splitext(url)[-1].lower()
     file_path = f"./.cache/Temp{file_extension}"
     print(f"下载{file_extension}文件中")
-    response = requests.get(url, stream=True)
-    with open(file_path, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-    return [file_path, file_extension]
+    
+    retry_count = 0
+    while True:
+        try:
+            retry_count += 1
+            print(f"尝试下载 (第{retry_count}次)")
+            response = requests.get(url, stream=True)
+            
+            # Check if response status is 200 (OK)
+            if response.status_code == 200:
+                with open(file_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                return [file_path, file_extension]
+            else:
+                print(f"下载失败，重试中... (第{retry_count}次)")
+                continue
+        except Exception as e:
+            print(f"下载出错，重试中... (第{retry_count}次)")
+            continue
 
 
 def export_wav(file_path, file_extension):
